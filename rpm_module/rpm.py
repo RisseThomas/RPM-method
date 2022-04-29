@@ -8,17 +8,19 @@ import rpm_module.hamiltonian as Ham
 class RPMSolverPHS:
     """Blablabla
     """
-    def __init__(self, S, Hamiltonian, states, n_constraints,
+    def __init__(self, phs_struct,
                  projection_order, regul_order, time_step, quad_order=10,
                  epsilon=10**(-10), max_iter=100):
         """Initialize the class
 
         Args:
-            S (2D array): interconnexion matrix
-            gradients (function): functions used to evaluate the gradient of
-                the hamiltonian given the state.
-            hessian (2D array): hessian of the hamiltonians in a 2D array
-            n_constraints (int): number of constraints of the system
+            phs_struct (dict): dictionnary containing:
+                    "S": interconnexion matrix
+                    "States": array of sympy states variables
+                    "H": hamiltonian sympy expression as a function of only
+                         the state variables
+                    "Constraints": number of constraints of the system
+
             projection_order (int): number of functions in the projection basis
             regul_order (int): regularization order, so that solutions are
                                smooths in H^(regul_order)
@@ -48,17 +50,17 @@ class RPMSolverPHS:
         """PHS system description
         """
         # Interconnection matrix
-        self.S = S
+        self.S = phs_struct["S"]
 
         # Sympy Hamiltonian and states
-        self.H_sp = Hamiltonian
-        self.states = states
+        self.H_sp = phs_struct["H"]
+        self.states = phs_struct["States"]
 
         # Number of state variables (before projection)
         self.n_state = len(self.states)
 
         # Number of constraints
-        self.n_constraints = n_constraints
+        self.n_constraints = phs_struct["Constraints"]
 
         # Full size unprojected
         self.full_size_unproj = self.n_constraints + self.n_state
