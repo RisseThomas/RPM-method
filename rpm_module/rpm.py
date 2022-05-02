@@ -78,7 +78,8 @@ class RPMSolverPHS:
         # Note : self.basis is a class instance which gives access to
         # evaluate_proj evaluate_regul and evaluate_all to evaluate
         # values of basis functions at points given in an arument x.
-        self.basis = bf.ShiftedLegendrePolys(self.p_order, regul_order)
+        self.basis = bf.ShiftedLegendrePolys(self.p_order, regul_order,
+                                             self.time_step)
 
         # System size during projection step
         self.H_proj_size = self.p_order * self.n_state
@@ -192,6 +193,18 @@ class RPMSolverPHS:
         return dx, iter
 
     def simulate(self, init, duration):
+        """Simulates the system for the given duration
+        with initialization given in init.
+
+        Args:
+            init (array): initial state values
+            duration (float): simulation duration
+
+        Returns:
+            arrays: states, projection coefficients of P for state variables,
+                    projection coefficients of P for Larange multipliers,
+                    projection coefficients of R
+        """
 
         Nframes = int(duration / self.time_step)
 
@@ -214,7 +227,8 @@ class RPMSolverPHS:
             x0 = x_frames[step]
             # Use last projected flows as estimate for first newton raphson
             # iteration
-            f_guess = np.concatenate((dx_proj[step-1], l_mults[step-1]), axis=0)
+            f_guess = np.concatenate((dx_proj[step-1], l_mults[step-1]),
+                                     axis=0)
             # Solve system for the frame
             proj_coeffs, iters[step] =\
                 self._solve_newton_raphson(x0, f_guess, proj.f_and_jac_quad)
@@ -226,7 +240,7 @@ class RPMSolverPHS:
             x1 = x_frames[step+1]
 
             # Regularization
-            # dx_regul[step] = proj.regularize(self, x0, x1, proj_coeffs)
+            dx_regul[step] = proj.regularize(self, x0, x1, proj_coeffs)
 
         print(f"Mean number of NR iterations : {np.mean(iters[1:-1])}")
         print(f"Max number of NR iterations : {np.max(iters[1:-1])},\

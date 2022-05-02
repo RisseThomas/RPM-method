@@ -278,11 +278,14 @@ def check_proj_gradient(solver, x0, dx, tau):
 def regularize(solver, x0, x1, proj_coeffs):
     """Apply the regularization step on the projected system.
 
+    Here, we expect assembling constraints written such that if there are
+    n constraints, n flows are depending only on these constraints.
+
     Args:
         solver (object): instance of the rpm solver class
         x0 (array): states at begining of frame. Size: [solver.n_state]
         x1 (array): states at end of frame. Size: [solver.n_state]
-        proj_coeffs (arrat): Coefficients of the projection step.
+        proj_coeffs (array): Coefficients of the projection step.
                              Size: [solver.full_size_unproj, solver.p_order]
 
     Returns:
@@ -290,21 +293,23 @@ def regularize(solver, x0, x1, proj_coeffs):
             solver.k_order]
     """
     # Separation of coefficients
-    p_coeffs_H = proj_coeffs[0:solver.H_proj_size]
-    p_coeffs_L = proj_coeffs[solver.H_proj_size:]
+    p_coeffs_H = proj_coeffs[0:solver.n_state]
+    p_coeffs_L = proj_coeffs[solver.n_state:]
 
     # Initialization
     regul_order = int(solver.k_order / 2)
-    regul_0 = np.zeros((regul_order, solver.full_size_unproj))
-    regul_1 = np.zeros((regul_order, solver.full_size_unproj))
+    regul_0 = np.zeros((regul_order, solver.n_state))
+    regul_1 = np.zeros((regul_order, solver.n_state))
 
+    SH = solver.S[0:solver.n_state, 0:solver.n_state]
+    SL = solver.S[0:solver.n_state, solver.n_state:]
     for order in range(regul_order):
         if order == 0:
             # Values of flows
             f_tau0 = solver.basis.get_proj_diff_0(p_coeffs_H, order)
             f_tau1 = solver.basis.get_proj_diff_1(p_coeffs_H, order)
 
-            # Values of Lagrange multipliers
+            # Values of Lagrange multipliers differentiation
             l_tau0 = solver.basis.get_proj_diff_0(p_coeffs_L, order)
             l_tau1 = solver.basis.get_proj_diff_1(p_coeffs_L, order)
 
@@ -312,33 +317,36 @@ def regularize(solver, x0, x1, proj_coeffs):
             dH_tau0 = solver.gradients(x0)
             dH_tau1 = solver.gradients(x1)
 
-            # Concatenation of left and right side arrays
-            left_side0 = np.concatenate((f_tau0,
-                                         np.zeros(solver.cons_proj_size)))
-            left_side1 = np.concatenate((f_tau1,
-                                         np.zeros(solver.cons_proj_size)))
-            right_side0 = np.concatenate((dH_tau0,
-                                          l_tau0))
-            right_side1 = np.concatenate((dH_tau1,
-                                          l_tau1))
-
-            # 
-
-            diff_f_0 = np.dot(solver.S, solver.gradients(x0))
-            regul_0[order, :] = diff_f_0\
-                - solver.basis.get_proj_diff_0(dx, order)
-            diff_f_1 = np.dot(solver.S, solver.gradients(x1))
-            regul_1[order, :] = diff_f_1\
-                - solver.basis.get_proj_diff_1(dx, order)
+            # Computation of regularization coefficients
+            diff_f_0 = SH @ dH_tau0
+            regul_0[order, :] = diff_f_0 + SL @ l_tau0\
+                - f_tau0
+            diff_f_1 = SH @ dH_tau1
+            regul_1[order, :] = diff_f_1 + SL @ l_tau0\
+                - f_tau1
         else:
-            diff2_f_0 = np.dot(solver.S @ solver.hessian(x0),
+            # Values of flows
+            f_tau0 = solver.basis.get_proj_diff_0(p_coeffs_H, order)
+            f_tau1 = solver.basis.get_proj_diff_1(p_coeffs_H, order)
+
+            # Values of Lagrange multipliers differentiation
+            l_tau0 = solver.basis.get_proj_diff_0(p_coeffs_L, order)
+            l_tau1 = solver.basis.get_proj_diff_1(p_coeffs_L, order)
+
+            # Values of hessians
+            dH_tau0 = solver.hessian(x0)
+            dH_tau1 = solver.hessian(x1)
+
+            diff2_f_0 = np.dot(SH @ dH_tau0,
                                diff_f_0)
-            regul_0[order, :] = diff2_f_0\
-                - solver.basis.get_proj_diff_0(dx, order)
-            diff2_f_1 = np.dot(solver.S @ solver.hessian(x1),
+            diff2_f_1 = np.dot(SH @ dH_tau1,
                                diff_f_1)
-            regul_1[order, :] = diff2_f_1\
-                - solver.basis.get_proj_diff_1(dx, order)
+
+            # Regularization coeffs computation
+            regul_0[order, :] = diff2_f_0 + SL @ l_tau0\
+                - f_tau0
+            regul_1[order, :] = diff2_f_1 + SL @ l_tau1\
+                - f_tau1
     return np.concatenate((regul_0.T, regul_1.T), axis=1)
 
 

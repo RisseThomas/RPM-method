@@ -6,10 +6,11 @@ class Basis():
     """Template class for basis generation and handling
 
     """
-    def __init__(self, proj_order, regul_order):
+    def __init__(self, proj_order, regul_order, time_step):
         self.p_order = proj_order
         self.k_order = regul_order * 2
         self.full_size = self.k_order + self.p_order
+        self.time_step = time_step
 
     def evaluate_proj(self, x):
         """Returns an array containing basis functions of the projection step
@@ -51,15 +52,16 @@ class Basis():
 class ShiftedLegendrePolys(Basis):
     """Basis functions class for Legendre Polynomials (L2 normalized).
     """
-    def __init__(self, proj_order, regul_order):
+    def __init__(self, proj_order, regul_order, time_step):
         """Initialize the class with the basis
         size.
 
         Args:
             proj_order (int): order of the projection step
             regul_order (int): order of the regularization step
+            time_step (float): timestep
         """
-        super().__init__(proj_order, regul_order)
+        super().__init__(proj_order, regul_order, time_step)
         # Construct matrices used to evaluate legendre polynomials
         # from arrays of powers of x
         self.A_proj, self.A_regul = self._build_A()
@@ -115,12 +117,14 @@ class ShiftedLegendrePolys(Basis):
                 # than j
                 if self.full_size >= j:
                     # Derivative at x=0
-                    B_phi[i, j] = spe.factorial(j) * poly_coeffs[i][j]
+                    B_phi[i, j] = spe.factorial(j) * poly_coeffs[i][j] *\
+                                  np.power(1/self.time_step, j)
                     # Derivative at x=1
                     factor = spe.factorial(np.arange(j, self.full_size)) / \
                         spe.factorial(np.arange(self.full_size-j))
                     B_phi[i, j+int(self.k_order/2)] = \
-                        np.dot(factor, poly_coeffs[i][j:])
+                        np.dot(factor, poly_coeffs[i][j:]) *\
+                        np.power(1/self.time_step, j)
 
         # We can now compute the inverse of B_phi which gives us
         # a change of base
@@ -199,12 +203,14 @@ class ShiftedLegendrePolys(Basis):
                 # derivatives are equal to 0.
                 if j <= self.p_order-1:
                     # Derivative at x=0
-                    diff_0[j, i] = spe.factorial(j) * poly_coeffs[i][j]
+                    diff_0[j, i] = spe.factorial(j) * poly_coeffs[i][j] *\
+                                  np.power(1/self.time_step, j)
                     # Derivative at x=1
                     factor = spe.factorial(np.arange(j, self.p_order)) / \
                         spe.factorial(np.arange(self.p_order-j))
                     diff_1[j, i] = \
-                        np.dot(factor, poly_coeffs[i][j:])
+                        np.dot(factor, poly_coeffs[i][j:]) *\
+                        np.power(1/self.time_step, j)
         return diff_0, diff_1
 
     def get_proj_diff_0(self, dx, order):

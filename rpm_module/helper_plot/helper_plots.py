@@ -5,12 +5,20 @@ import rpm_module as rpm
 
 
 def plot_basis(solver):
+    """Plots both basis of the solver in two different subplots.
+
+    Args:
+        solver (object): instance of the solver class
+
+    Returns:
+        object: matplotlib figure
+    """
     evaluate_proj = solver.basis.evaluate_proj
     evaluate_regul = solver.basis.evaluate_regul
     x = np.linspace(0, 1, 500)
     y_proj = evaluate_proj(x)
 
-    plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(12, 6))
     plt.suptitle("Basis functions")
 
     plt.subplot(1, 2, 1)
@@ -38,10 +46,18 @@ def plot_basis(solver):
     plt.legend()
 
     plt.tight_layout()
+    return fig
 
 
 def plot_basis_P(solver):
+    """Plots the basis of the projector P.
 
+    Args:
+        solver (object): instance of the solver class
+
+    Returns:
+        object: matplotlib figure
+    """
     # Evaluating basis function values
     evaluate_proj = solver.basis.evaluate_proj
     x = np.linspace(0, 1, 500)
@@ -59,25 +75,25 @@ def plot_basis_P(solver):
     cmap = mpl.cm.ScalarMappable(norm=norm, cmap=mpl.cm.autumn)
 
     # Add background colors
-    plt.axvspan(-1, 0, facecolor='pink', alpha=0.2)
-    plt.axvspan(1, 2, facecolor='pink', alpha=0.2)
-
-    # Add vertical lines to separate time frames
-    plt.vlines([0, 1], [miny, miny], [maxy, maxy], colors='black',
-               linestyles='dashed')
+    plt.axvspan(-1, 0, facecolor='pink', alpha=0.1)
+    plt.axvspan(1, 2, facecolor='pink', alpha=0.1)
 
     for n in range(len(y_proj)):
         i = len(y_proj)-1-n
-        alpha = 1 - i/(2*len(y_proj))
+        alpha = 1 - i/(3*len(y_proj))
         color = cmap.to_rgba(i)
         if i == 0:
-            lw = 4
+            lw = 3
         else:
             lw = 2
         plt.plot(x, y_proj[i], label=f'Basis function {i+1}',
                  c=color, alpha=alpha, linewidth=lw)
-        plt.plot(x-1, y_proj[i], c=color, alpha=alpha-0.4, linewidth=lw)
-        plt.plot(x+1, y_proj[i], c=color, alpha=alpha-0.4, linewidth=lw)
+        plt.plot(x-1, y_proj[i], c=color, alpha=alpha-0.2, linewidth=lw)
+        plt.plot(x+1, y_proj[i], c=color, alpha=alpha-0.2, linewidth=lw)
+    
+    # Add vertical lines to separate time frames
+    plt.vlines([0, 1], [miny, miny], [maxy, maxy], colors='black',
+               linestyles='dashed')
 
     # Label and legends
     plt.xlabel('$ tau $')

@@ -27,7 +27,7 @@ def compute_diffs(H, states, max_order, mode="lambda"):
                for i in range(max_order)]
 
     # Make sure that returned arrays are numpy arrays
-    # and that in input numpy array containing the state is accepted
+    # and that an input numpy array containing the state is accepted
     def build_f(order):
         l_dims = [len(states) for i in range(order+1)]
 

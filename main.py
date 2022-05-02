@@ -3,23 +3,18 @@ import rpm_module as rpm
 import sympy as sp
 
 # Problem data
+# Load a phs stucture
+filename = "models/pickles/linear_example_muller.pickle"
+phs_struct = rpm.struct.load(filename)
 
-# Interconnexion matrix
-S = np.array([[0, -1],
-             [1, 0]])
-
-# Hamiltonian
-q, phi, C0, phi0 = sp.symbols('q, phi, C_0, phi_0', real=True)
-states = [q, phi]
-
-
-def hamiltonian(q, phi):
-    return q**2 / (2*C0) + phi**2 / (2*phi0)
-
-
-H = hamiltonian(q, phi)
-H = H.subs(C0, 1)
-H = H.subs(phi0, 1)
+# Replace parameters of the hamiltonian with their desired values
+parameters = phs_struct["Parameters"]
+print(parameters)
+C0 = parameters[0]
+# C2 = parameters[1]
+L0 = parameters[1] 
+phs_struct["H"] = phs_struct["H"].subs([(C0, 1), (L0, 1)])
+phs_struct["H"]
 
 
 # Solver parameters
@@ -27,16 +22,16 @@ p_order = 1
 k_order = 2
 sr = 10
 step_size = 1/sr
-quadOrder = 50
+quad_order = 50
 epsilon = 10**(-10)
 maxIter = 10
 
-solver = rpm.RPMSolverPHS(S, H, states, p_order, k_order, step_size,
-                          quadOrder, epsilon, maxIter)
+solver = rpm.RPMSolverPHS(phs_struct, p_order, k_order, step_size,
+                          quad_order, epsilon, maxIter)
 
 # Initialization
-init = np.ones(len(S), dtype=np.float64)
+init = np.ones(len(phs_struct["S"]), dtype=np.float64)
 
 duration = 1
 t = np.linspace(0, duration, int(duration/step_size))
-x, dx_proj, dx_regul = solver.simulate(init, duration)
+x, dx_proj, l_mults, dx_regul = solver.simulate(init, duration)
