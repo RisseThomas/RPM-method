@@ -226,7 +226,7 @@ class RPMSolverPHS:
             x1 = x_frames[step+1]
 
             # Regularization
-            #dx_regul[step] = proj.regularize(self, x0, x1, proj_coeffs)
+            # dx_regul[step] = proj.regularize(self, x0, x1, proj_coeffs)
 
         print(f"Mean number of NR iterations : {np.mean(iters[1:-1])}")
         print(f"Max number of NR iterations : {np.max(iters[1:-1])},\
