@@ -199,3 +199,125 @@ def plot_flows_trajectories(solver, dx_proj, dx_regul, N_points=10):
                 plt.plot(step+tau, synth_proj[step, state], color='r')
                 plt.plot(step+tau, synth_full[step, state], color='b')
         plt.legend()
+
+
+def plot_phase_diagram_2D(solver, x, dx_proj, dx_regul, N_points=10):
+    # First we evaluate integration of the basis functions at intermediate
+    # points.
+    taui = np.linspace(0, 1, N_points, endpoint=False)
+    integrals = np.zeros((N_points, solver.k_order + solver.p_order))
+    for i, tau in enumerate(taui):
+        integrals[i] = solver.quad.integrate(solver.basis.evaluate_all, 0, tau)
+    integrals_P = integrals[:, :solver.p_order]
+
+    # Concatenation of flows
+    dx = np.concatenate((dx_proj, dx_regul), axis=2)
+
+    steps = len(x)
+    int_states_regul = np.zeros((len(x) * N_points, solver.n_state))
+    int_states_non_regul = np.zeros((len(x) * N_points, solver.n_state))
+    for step in range(steps):
+        first_ind = step*N_points
+        last_ind = first_ind+N_points
+        x0 = x[step]
+        for state in range(solver.n_state):
+            int_states_regul[first_ind:last_ind, state] = \
+                x0[state] + solver.time_step * dx[step, state]@integrals.T
+
+            int_states_non_regul[first_ind:last_ind, state] = \
+                x0[state] +\
+                solver.time_step * dx_proj[step, state]@integrals_P.T
+
+    fig = plt.figure(figsize=(12, 6))
+    plt.suptitle("Phase diagram")
+
+    # Without regularization
+    plt.subplot(1, 2, 1)
+
+    plt.plot(int_states_non_regul[:, 0], int_states_non_regul[:, 2])
+    x0_points = np.arange(0, len(x)*N_points, N_points)
+    plt.scatter(int_states_non_regul[x0_points, 0],
+                int_states_non_regul[x0_points, 2], c='r')
+
+    plt.xlabel(solver.states[0])
+    plt.ylabel(solver.states[1])
+    plt.title("Without regularization")
+
+    # With regularization
+    plt.subplot(1, 2, 2)
+
+    plt.plot(int_states_regul[:, 0], int_states_regul[:, 2])
+    x0_points = np.arange(0, len(x)*N_points, N_points)
+    plt.scatter(int_states_regul[x0_points, 0],
+                int_states_regul[x0_points, 2], c='r')
+
+    plt.xlabel(solver.states[0])
+    plt.ylabel(solver.states[1])
+    plt.title("With regularization")
+
+    plt.tight_layout()
+
+    return fig
+
+
+def plot_gradients_phase(solver, x, dx_proj, dx_regul, N_points=10):
+    # First we evaluate integration of the basis functions at intermediate
+    # points.
+    taui = np.linspace(0, 1, N_points, endpoint=False)
+    integrals = np.zeros((N_points, solver.k_order + solver.p_order))
+    for i, tau in enumerate(taui):
+        integrals[i] = solver.quad.integrate(solver.basis.evaluate_all, 0, tau)
+    integrals_P = integrals[:, :solver.p_order]
+
+    # Concatenation of flows
+    dx = np.concatenate((dx_proj, dx_regul), axis=2)
+
+    steps = len(x)
+    int_states_regul = np.zeros((len(x) * N_points, solver.n_state))
+    int_states_non_regul = np.zeros((len(x) * N_points, solver.n_state))
+    for step in range(steps):
+        first_ind = step*N_points
+        last_ind = first_ind+N_points
+        x0 = x[step]
+        for state in range(solver.n_state):
+            int_states_regul[first_ind:last_ind, state] = \
+                x0[state] + solver.time_step * dx[step, state]@integrals.T
+
+            int_states_non_regul[first_ind:last_ind, state] = \
+                x0[state] +\
+                solver.time_step * dx_proj[step, state]@integrals_P.T
+
+    # Computation of gradients from the state
+    gradients_non_regul = solver.gradients(int_states_non_regul)
+    gradients_regul = solver.gradients(int_states_regul)
+
+    fig = plt.figure(figsize=(12, 6))
+    plt.suptitle("Gradient phase diagram")
+
+    # Without regularization
+    plt.subplot(1, 2, 1)
+
+    plt.plot(gradients_non_regul[:, 0], gradients_non_regul[:, 1])
+    x0_points = np.arange(0, len(x)*N_points, N_points)
+    plt.scatter(gradients_non_regul[x0_points, 0],
+                gradients_non_regul[x0_points, 1], c='r')
+
+    plt.xlabel(f'GradH / {solver.states[0]}')
+    plt.ylabel(f'GradH / {solver.states[1]}')
+    plt.title("Without regularization")
+
+    # With regularization
+    plt.subplot(1, 2, 2)
+
+    plt.plot(gradients_regul[:, 0], gradients_regul[:, 1])
+    x0_points = np.arange(0, len(x)*N_points, N_points)
+    plt.scatter(gradients_regul[x0_points, 0],
+                gradients_regul[x0_points, 1], c='r')
+
+    plt.xlabel(f'GradH / {solver.states[0]}')
+    plt.ylabel(f'GradH / {solver.states[1]}')
+    plt.title("With regularization")
+
+    plt.tight_layout()
+
+    return fig

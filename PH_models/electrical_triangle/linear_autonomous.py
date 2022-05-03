@@ -43,6 +43,6 @@ def build_linear_auto(C_1, C_2, L_0):
     #filename = 'models/pickles/linear_autonomous_triangle.pickle'
     #rpm.struct.store(phs_struct, filename)
 
-    phs_struct["H"] = phs_struct["H"].subs([(C1, C_1), (C2, C_2), (L_0, 1)])
+    phs_struct["H"] = phs_struct["H"].subs([(C1, C_1), (C2, C_2), (L0, L_0)])
 
     return phs_struct

@@ -245,4 +245,4 @@ class RPMSolverPHS:
         print(f"Mean number of NR iterations : {np.mean(iters[1:-1])}")
         print(f"Max number of NR iterations : {np.max(iters[1:-1])},\
               step index : {np.argmax(iters[1:-1])}")
-        return x_frames[1:], dx_proj[1:-1], l_mults[1:-1], dx_regul[1:-1]
+        return x_frames[1:], dx_proj[1:], l_mults[1:], dx_regul[1:-1]
