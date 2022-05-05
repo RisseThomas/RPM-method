@@ -201,7 +201,8 @@ def plot_flows_trajectories(solver, dx_proj, dx_regul, N_points=10):
         plt.legend()
 
 
-def plot_phase_diagram_2D(solver, x, dx_proj, dx_regul, N_points=10):
+def plot_phase_diagram_2D(solver, x, dx_proj, dx_regul, N_points=10,
+                          indexes = [0,1]):
     # First we evaluate integration of the basis functions at intermediate
     # points.
     taui = np.linspace(0, 1, N_points, endpoint=False)
@@ -234,25 +235,25 @@ def plot_phase_diagram_2D(solver, x, dx_proj, dx_regul, N_points=10):
     # Without regularization
     plt.subplot(1, 2, 1)
 
-    plt.plot(int_states_non_regul[:, 0], int_states_non_regul[:, 2])
+    plt.plot(int_states_non_regul[:, indexes[0]], int_states_non_regul[:, indexes[1]])
     x0_points = np.arange(0, len(x)*N_points, N_points)
-    plt.scatter(int_states_non_regul[x0_points, 0],
-                int_states_non_regul[x0_points, 2], c='r')
+    plt.scatter(int_states_non_regul[x0_points, indexes[0]],
+                int_states_non_regul[x0_points, indexes[1]], c='r')
 
-    plt.xlabel(solver.states[0])
-    plt.ylabel(solver.states[1])
+    plt.xlabel(solver.states[indexes[0]])
+    plt.ylabel(solver.states[indexes[1]])
     plt.title("Without regularization")
 
     # With regularization
     plt.subplot(1, 2, 2)
 
-    plt.plot(int_states_regul[:, 0], int_states_regul[:, 2])
+    plt.plot(int_states_regul[:, indexes[0]], int_states_regul[:, indexes[1]])
     x0_points = np.arange(0, len(x)*N_points, N_points)
-    plt.scatter(int_states_regul[x0_points, 0],
-                int_states_regul[x0_points, 2], c='r')
+    plt.scatter(int_states_regul[x0_points, indexes[0]],
+                int_states_regul[x0_points, indexes[1]], c='r')
 
-    plt.xlabel(solver.states[0])
-    plt.ylabel(solver.states[1])
+    plt.xlabel(solver.states[indexes[0]])
+    plt.ylabel(solver.states[indexes[1]])
     plt.title("With regularization")
 
     plt.tight_layout()
@@ -260,7 +261,8 @@ def plot_phase_diagram_2D(solver, x, dx_proj, dx_regul, N_points=10):
     return fig
 
 
-def plot_gradients_phase(solver, x, dx_proj, dx_regul, N_points=10):
+def plot_gradients_phase(solver, x, dx_proj, dx_regul, N_points=10,
+                         indexes=[0, 1]):
     # First we evaluate integration of the basis functions at intermediate
     # points.
     taui = np.linspace(0, 1, N_points, endpoint=False)
@@ -297,25 +299,25 @@ def plot_gradients_phase(solver, x, dx_proj, dx_regul, N_points=10):
     # Without regularization
     plt.subplot(1, 2, 1)
 
-    plt.plot(gradients_non_regul[:, 0], gradients_non_regul[:, 1])
+    plt.plot(gradients_non_regul[:, indexes[0]], gradients_non_regul[:, indexes[1]])
     x0_points = np.arange(0, len(x)*N_points, N_points)
-    plt.scatter(gradients_non_regul[x0_points, 0],
-                gradients_non_regul[x0_points, 1], c='r')
+    plt.scatter(gradients_non_regul[x0_points, indexes[0]],
+                gradients_non_regul[x0_points, indexes[1]], c='r')
 
-    plt.xlabel(f'GradH / {solver.states[0]}')
-    plt.ylabel(f'GradH / {solver.states[1]}')
+    plt.xlabel(f'GradH / {solver.states[indexes[0]]}')
+    plt.ylabel(f'GradH / {solver.states[indexes[1]]}')
     plt.title("Without regularization")
 
     # With regularization
     plt.subplot(1, 2, 2)
 
-    plt.plot(gradients_regul[:, 0], gradients_regul[:, 1])
+    plt.plot(gradients_regul[:, indexes[0]], gradients_regul[:, indexes[1]])
     x0_points = np.arange(0, len(x)*N_points, N_points)
-    plt.scatter(gradients_regul[x0_points, 0],
-                gradients_regul[x0_points, 1], c='r')
+    plt.scatter(gradients_regul[x0_points, indexes[0]],
+                gradients_regul[x0_points, indexes[1]], c='r')
 
-    plt.xlabel(f'GradH / {solver.states[0]}')
-    plt.ylabel(f'GradH / {solver.states[1]}')
+    plt.xlabel(f'GradH / {solver.states[indexes[0]]}')
+    plt.ylabel(f'GradH / {solver.states[indexes[1]]}')
     plt.title("With regularization")
 
     plt.tight_layout()
