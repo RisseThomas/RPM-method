@@ -246,3 +246,55 @@ class RPMSolverPHS:
         print(f"Max number of NR iterations : {np.max(iters[1:-1])},\
               step index : {np.argmax(iters[1:-1])}")
         return x_frames[1:], dx_proj[1:], l_mults[1:], dx_regul[1:-1]
+
+class linear_order1_solver:
+    def __init__(self, phs_struct, time_step):
+        self.struct = phs_struct
+        self.S = self.struct["S"]
+        self.L = self.struct["L"]
+        self.n_state = 2
+        self.time_step = time_step
+
+        self.step_mat = self.build_stepping_matrix()
+
+    def H(self, x):
+        return np.diag(0.5 * x @ self.L @ x.T)
+
+    def build_stepping_matrix(self):
+        delta = np.eye(self.n_state) - self.time_step*self.S @ self.L / 2
+        delta_inv = np.linalg.pinv(delta)
+        A = self.S @ self.L
+        return delta_inv @ A
+
+    def simulate(self, init, duration):
+        """Simulates the system for the given duration
+        with initialization given in init.
+
+        Args:
+            init (array): initial state values
+            duration (float): simulation duration
+
+        Returns:
+            arrays: states, projection coefficients of P for state variables,
+                    projection coefficients of P for Larange multipliers,
+                    projection coefficients of R
+        """
+
+        Nframes = int(duration / self.time_step)
+
+        # Array to store states at each step
+        x_frames = np.zeros((Nframes, self.n_state))
+        x_frames[1] = init
+        # Array to store projected state flow at each step
+        dx_proj = np.zeros((Nframes, self.n_state))
+
+
+        for step in range(1, Nframes-1):
+            # Find dx
+            x0 = x_frames[step]
+            # Split projection coefficients
+            dx_proj[step] = self.step_mat @ x0
+            # Compute state at end of frame
+            x_frames[step+1] = x0 + self.time_step * dx_proj[step, :]
+
+        return x_frames[1:], dx_proj[1:]

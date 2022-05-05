@@ -10,15 +10,14 @@ def build_linear(C_0, L_0):
                   [1, 0]])
 
     # Symbols declaration
-    q, phi, C0, L0 = sp.symbols('q, phi, C_0, L_0', real=True)
+    q, phi = sp.symbols('q, phi', real=True)
     # States variables
     states = [q, phi]
-    # Additional parameters
-    parameters = [C0, L0]
+
     # Hamiltonian expression
 
     def hamiltonian(q, phi):
-        return (q)**2 / (2*C0) + phi**2 / (2*L0)
+        return (q)**2 / (2*C_0) + phi**2 / (2*L_0)
 
     H = hamiltonian(*states)
 
@@ -32,11 +31,12 @@ def build_linear(C_0, L_0):
     phs_struct = rpm.struct.build_struct_dict(S,
                                               H,
                                               states,
-                                              parameters,
                                               n_constraints,
                                               about)
 
-    phs_struct["H"] = phs_struct["H"].subs([(C0, C_0), (L0, L_0)])
+    # Add the L matrix to desribe hamiltonian of linear systems
+    phs_struct["L"] = np.array([[1/C_0, 0],
+                                [0, 1/L_0]])
 
     return phs_struct
 

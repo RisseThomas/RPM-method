@@ -26,8 +26,8 @@ def hessian_basis_term(solver):
                      solver.basis_int.T)
 
 
-def _compute_intermediate_points(solver, x0, dx):
-    """Computes the value of states variables at quadrature points in a frame
+def _compute_intermediate_states(solver, x0, dx):
+    """Computes the value of states variables at quadrature points
     in a frame using values of x0 the state at the begining of the frame
     and dx the projected flows
 
@@ -47,7 +47,7 @@ def _compute_intermediate_points(solver, x0, dx):
     return inter_states + solver.time_step * dx @ solver.basis_int
 
 
-def _proj_gradient(solver, int_points):
+def _proj_gradient(solver, int_states):
     """Compute projected gradients of the system using state
     at the begining of the frame and estimation of the flows projection
     coefficients dx.
@@ -56,7 +56,7 @@ def _proj_gradient(solver, int_points):
 
 
     Args:
-        int_points: estimated state values at quadrature points.
+        int_states: estimated state values at quadrature points.
                     Size: [solver.n_state, solver.quad_order]
     Returns:
         2D array: array of projected gradients coefficients
@@ -65,25 +65,25 @@ def _proj_gradient(solver, int_points):
     # Initialization of the array
     proj_gradient = np.zeros((solver.n_state, solver.p_order))
     # Evaluation of gradients at each quadrature points
-    # size(gradHint_points) = [solver.n_states, solver.quad_order]
-    grad_H_int_points = solver.gradients(int_points.T).T
+    # size(gradHint_states) = [solver.n_states, solver.quad_order]
+    grad_H_int_states = solver.gradients(int_states.T).T
     # Add weights to the quadrature points to perform integration
     w_quad_points = solver.basis_quad_points*solver.quad.quad_weights
-    proj_gradient = grad_H_int_points @ w_quad_points.T
+    proj_gradient = grad_H_int_states @ w_quad_points.T
     """for i in range(solver.p_order):
-        to_integrate = grad_H_int_points * solver.basis_quad_points[i, :]
+        to_integrate = grad_H_int_states * solver.basis_quad_points[i, :]
         proj_gradient[:, i] = solver.quad.quadrature_array(to_integrate)"""
     return proj_gradient
 
 
-def _fToOptimize(solver, dx, l_mults, int_points):
+def _fToOptimize(solver, dx, l_mults, int_states):
     """Function to optimize at each projection step,
     so that dx - S*grad(dx) = 0
 
     Args:
         dx (2D array): projected flows coefficients for the frame.
                         Size: [solver.n_state, solver.p_order]
-        int_points: estimated state values at quadrature points.
+        int_states: estimated state values at quadrature points.
                         Size: [solver.n_state, solver.quad_order]
 
     Returns:
@@ -91,17 +91,17 @@ def _fToOptimize(solver, dx, l_mults, int_points):
     """
     left_side = np.concatenate((dx.flatten(),
                                np.zeros(solver.cons_proj_size)), axis=0)
-    right_side = np.concatenate((_proj_gradient(solver, int_points).flatten(),
+    right_side = np.concatenate((_proj_gradient(solver, int_states).flatten(),
                                 l_mults.flatten()), axis=0)
     return left_side - solver.S_proj @ right_side
 
 
-def _jacobi(solver, int_points):
+def _jacobi(solver, int_states):
     """Computes the derivatives of fToOptimize
     with respect to the projected flows variables
 
     Args:
-        int_points: estimated state values at quadrature points.
+        int_states: estimated state values at quadrature points.
                     Size: [solver.n_state, solver.quad_order]
 
     Returns:
@@ -110,7 +110,7 @@ def _jacobi(solver, int_points):
     """
     # Hamiltonian related term
     # Compute unprojected hessian at integration points
-    hessian_H = solver.hessian(int_points.T)
+    hessian_H = solver.hessian(int_states.T)
     # hessian_H = np.moveaxis(hessian_H, [0, 1, 2], [1, 2, 0])
     # Compute kronecker product for each integration point
     to_integrate = np.einsum('aij, akl -> aikjl',
@@ -157,9 +157,9 @@ def f_and_jac_quad(solver, x0, p_flows):
     """
     p_flows_H = p_flows[0:solver.n_state]
     p_flows_L = p_flows[solver.n_state:]
-    int_points = _compute_intermediate_points(solver, x0, p_flows_H)
-    return _fToOptimize(solver, p_flows_H, p_flows_L, int_points),\
-        _jacobi(solver, int_points)
+    int_states = _compute_intermediate_states(solver, x0, p_flows_H)
+    return _fToOptimize(solver, p_flows_H, p_flows_L, int_states),\
+        _jacobi(solver, int_states)
 
 # Computation of un-projected gradient
 
@@ -249,9 +249,9 @@ def check_proj_gradient(solver, x0, dx, tau):
             Size: [len(tau), solver.n_state]
     """
     # Compute intermediate states for integration
-    int_points = _compute_intermediate_points(solver, x0, dx)
+    int_states = _compute_intermediate_states(solver, x0, dx)
     # Compute projected gradient values
-    proj_gradient_coeffs = _proj_gradient(solver, int_points)
+    proj_gradient_coeffs = _proj_gradient(solver, int_states)
     # Number of point to evaluate
     Ntau = len(tau)
 
